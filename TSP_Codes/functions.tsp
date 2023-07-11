@@ -1,4 +1,5 @@
-function discharge(voltlimit, discurrent, test_number)
+function discharge(voltlimit, discurrent, test_number, SOC) 
+	-- (voltaje descargado,corriente de descarga, número de identificación data)
 	
 	test_state = test_number
 
@@ -61,7 +62,7 @@ function discharge(voltlimit, discurrent, test_number)
 	ExtBuffer.clear()
 end
 
-function charge(voltlimit, charcurrent, currlimit, test_number)
+function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 
 	test_state = test_number
 
@@ -121,7 +122,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number)
 	return captotal_carga
 end
 
-function resting(voltlimit, contador_rest, test_number)
+function resting(voltlimit, contador_rest, test_number , SOC)
 
 	test_state = test_number
 
@@ -179,7 +180,7 @@ function resting(voltlimit, contador_rest, test_number)
 	ExtBuffer.clear()
 end
 
-function vocbor_measure(voltlimit, test_number)
+function vocbor_measure(voltlimit, test_number, SOC)
 
 	test_state = test_number
 	
@@ -405,7 +406,7 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	return captotal_pulso
 end
 
-function capacity_discharge(voltlimit, discurrent, discap, test_number)
+function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
 	test_state = test_number
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -459,4 +460,31 @@ function capacity_discharge(voltlimit, discurrent, discap, test_number)
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+end
+
+function keithley_control() 
+	-- Función para cambiar pins que dan el control de la prueba al keithley
+	 
+	digio.line[1].state = 1 -- (KEITHLEY TOMA CONTROL) Se configura el out = 1 para que la acción la ejecute el keithley
+	delay(2)
+	digio.line[3].state = 0 -- (SE DEJA DE ENVIAR LA SEÑAL PARA CONECTAR LA CELDA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
+	digio.line[4].state = 1 -- (SE CONECTA LA CELDA AL KEITHLEY )Enviamos un 0 porque no queremos desactivar el Normally Open aún
+end
+
+function EIS_control() 
+	-- Función para cambiar pins que dan el control de la prueba al EIS
+	 
+	digio.line[3].state = 1 -- (CELDA CONECTADA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
+	digio.line[4].state = 0 -- Enviamos un 0 porque no queremos desactivar el Normally Open aún
+	delay(2)
+	digio.line[1].state = 0 -- (KEITHLEY DEJA DE OPERAR)Enviamos un 0 para darle la acción al EIS y no al keithley
+end
+
+function keithley_listen() 
+	-- Función para que el keithley esté atento al input para cambiar el control
+	
+	while digio.line[2].state != digio.STATE_HIGH do
+		print(digio.line[2].state)
+		delay(1)
+	end
 end
