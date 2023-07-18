@@ -465,6 +465,14 @@ end
 function keithley_control() 
 	-- Función para cambiar pins que dan el control de la prueba al keithley
 	 
+	-- Declaramos los pineas como input y output
+	-- Se usa el pin 1 como output y el 2 como input
+	digio.line[1].mode = digio.MODE_DIGITAL_OUT
+	digio.line[2].mode = digio.MODE_DIGITAL_IN
+	digio.line[3].mode = digio.MODE_DIGITAL_OUT
+	digio.line[4].mode = digio.MODE_DIGITAL_OUT 
+	
+	-- Se setean los pins para darlo control al keithley
 	digio.line[1].state = 1 -- (KEITHLEY TOMA CONTROL) Se configura el out = 1 para que la acción la ejecute el keithley
 	delay(2)
 	digio.line[3].state = 0 -- (SE DEJA DE ENVIAR LA SEÑAL PARA CONECTAR LA CELDA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
@@ -473,16 +481,20 @@ end
 
 function EIS_control() 
 	-- Función para cambiar pins que dan el control de la prueba al EIS
-	 
+
+	-- Declaramos los pineas como input y output
+	-- Se usa el pin 1 como output y el 2 como input
+	digio.line[1].mode = digio.MODE_DIGITAL_OUT
+	digio.line[2].mode = digio.MODE_DIGITAL_IN
+	digio.line[3].mode = digio.MODE_DIGITAL_OUT
+	digio.line[4].mode = digio.MODE_DIGITAL_OUT 
+	
+	-- Se setean los pins para darle control al EIS
 	digio.line[3].state = 1 -- (CELDA CONECTADA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
 	digio.line[4].state = 0 -- Enviamos un 0 porque no queremos desactivar el Normally Open aún
 	delay(2)
 	digio.line[1].state = 0 -- (KEITHLEY DEJA DE OPERAR)Enviamos un 0 para darle la acción al EIS y no al keithley
-end
-
-function keithley_listen() 
-	-- Función para que el keithley esté atento al input para cambiar el control
-	
+	print("Señal enviada, EIS tomo control")
 	while digio.line[2].state != digio.STATE_HIGH do
 		print(digio.line[2].state)
 		delay(1)
