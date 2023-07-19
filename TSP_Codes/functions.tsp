@@ -515,6 +515,7 @@ function EIS_control()
 	
 	-- Se setean los pins para darle control al EIS
 	digio.line[3].state = 1 -- (CELDA CONECTADA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
+	delay(2)
 	digio.line[4].state = 0 -- Enviamos un 0 porque no queremos desactivar el Normally Open aún
 	delay(2)
 	digio.line[1].state = 0 -- (KEITHLEY DEJA DE OPERAR)Enviamos un 0 para darle la acción al EIS y no al keithley
