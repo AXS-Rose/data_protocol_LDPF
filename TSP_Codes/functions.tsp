@@ -1,6 +1,10 @@
 function discharge(voltlimit, discurrent, test_number, SOC) 
 	-- (voltaje descargado,corriente de descarga, número de identificación data)
 	
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+	
 	test_state = test_number
 
 	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
@@ -64,6 +68,10 @@ end
 
 function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+	
 	test_state = test_number
 
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -124,6 +132,10 @@ end
 
 function resting(voltlimit, contador_rest, test_number , SOC)
 
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+
 	test_state = test_number
 
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -182,6 +194,10 @@ end
 
 function vocbor_measure(voltlimit, test_number, SOC)
 
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+
 	test_state = test_number
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -239,6 +255,9 @@ end
 
 function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_number_2, test_number_3)
 
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
@@ -407,6 +426,11 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 end
 
 function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
+	
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+	
 	test_state = test_number
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
