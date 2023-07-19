@@ -5,6 +5,10 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 	reset() 
 	ExtBuffer = buffer.make(300000)
 	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	
 	test_state = test_number
 
 	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
@@ -72,6 +76,10 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 	reset() 
 	ExtBuffer = buffer.make(300000)
 	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	
 	test_state = test_number
 
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -136,6 +144,10 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 	reset() 
 	ExtBuffer = buffer.make(300000)
 
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+
 	test_state = test_number
 
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -198,6 +210,10 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	reset() 
 	ExtBuffer = buffer.make(300000)
 
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+
 	test_state = test_number
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
@@ -258,6 +274,10 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
+	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
@@ -430,6 +450,10 @@ function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
+	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
+	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
 	
 	test_state = test_number
 	
