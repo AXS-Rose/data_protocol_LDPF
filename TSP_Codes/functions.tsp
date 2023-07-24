@@ -6,8 +6,7 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
 	test_state = test_number
 
@@ -68,6 +67,7 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 	
 	-- se limpia el buffer
 	ExtBuffer.clear()
+	file.close(FileNumber)
 end
 
 function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
@@ -77,8 +77,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
 	test_state = test_number
 
@@ -134,6 +133,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
 	
 	return captotal_carga
 end
@@ -143,10 +143,9 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
-
+	
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
 	test_state = test_number
 
@@ -202,6 +201,7 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
 end
 
 function vocbor_measure(voltlimit, test_number, SOC)
@@ -211,8 +211,7 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	ExtBuffer = buffer.make(300000)
 
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
 	test_state = test_number
 	
@@ -267,6 +266,7 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
 end
 
 function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_number_2, test_number_3)
@@ -276,8 +276,7 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
@@ -441,6 +440,7 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
 	
 	return captotal_pulso
 end
@@ -452,8 +452,7 @@ function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_WRITE)
-	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
 	test_state = test_number
 	
@@ -508,6 +507,7 @@ function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
 end
 
 function keithley_control() 
@@ -523,8 +523,9 @@ function keithley_control()
 	-- Se setean los pins para darlo control al keithley
 	digio.line[1].state = 1 -- (KEITHLEY TOMA CONTROL) Se configura el out = 1 para que la acción la ejecute el keithley
 	delay(2)
-	digio.line[3].state = 0 -- (SE DEJA DE ENVIAR LA SEÑAL PARA CONECTAR LA CELDA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele
 	digio.line[4].state = 1 -- (SE CONECTA LA CELDA AL KEITHLEY )Enviamos un 0 porque no queremos desactivar el Normally Open aún
+	delay(2)
+	digio.line[3].state = 0 -- (SE DEJA DE ENVIAR LA SEÑAL PARA CONECTAR LA CELDA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele	
 end
 
 function EIS_control() 
