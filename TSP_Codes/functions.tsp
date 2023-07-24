@@ -1,14 +1,16 @@
-function discharge(voltlimit, discurrent, test_number, SOC) 
-	-- (voltaje descargado,corriente de descarga, número de identificación data)
+function discharge(voltlimit, discurrent, test_number, SOC)
+	-- Función para descargar una celda hasta el voltaje de corte dado
+	-- discharge(voltaje descargado,corriente de descarga, número de identificación data)
+	
+	reset()
 	
 	-- Creación buffer para guardar datos
-	reset() 
 	ExtBuffer = buffer.make(300000)
 	
-	-- Definicion de archivo data
+	-- Se abre el archivo para guardar data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
-	test_state = test_number
+	test_state = test_number -- Numero identificación test
 
 	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
 	smu.measure.sense = smu.SENSE_4WIRE -- Se cambia el sistema de medición a 4-wire para más precisión
@@ -52,6 +54,7 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 			captotal = captotal + capacity
 		end
 		
+		-- Se guardan, printean y muestran en keithley los datos
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state) 
 		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_state,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
@@ -67,13 +70,17 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 	
 	-- se limpia el buffer
 	ExtBuffer.clear()
+	
+	-- Se cierra el archivo de data (NECESARIO PARA QUE SE ESCRIBAN, SINO SE PUEDEN GUARDAR EN EL BUFFER Y NO ESCRIBIR NADA)
 	file.close(FileNumber)
 end
 
 function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
-
-	-- Creación buffer para guardar datos
+	-- Función para cargar mediante protocolo CCCV una celda hasta el voltaje limite seteado
+	-- charge(voltaje celda cargada, corriente de carga, corriente corte CV, test_number, SOC)
 	reset() 
+	
+	-- Creación buffer para guardar datos
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
@@ -139,9 +146,12 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 end
 
 function resting(voltlimit, contador_rest, test_number , SOC)
-
-	-- Creación buffer para guardar datos
+	-- Función que "descansa" la batería descansandola a corriente cercana a 0A
+	-- resting(voltaje descargado,segundos de descanso, test_number, SOC)
+	
 	reset() 
+	
+	-- Creación buffer para guardar datos
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
@@ -205,9 +215,11 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 end
 
 function vocbor_measure(voltlimit, test_number, SOC)
-
+	-- Es la misma función que resting pero solo por una iteración
+	
+	reset()
 	-- Creación buffer para guardar datos
-	reset() 
+	 
 	ExtBuffer = buffer.make(300000)
 
 	-- Definicion de archivo data
@@ -270,9 +282,12 @@ function vocbor_measure(voltlimit, test_number, SOC)
 end
 
 function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_number_2, test_number_3)
-
+	-- test de pulsos sobre la celda, se hace una descarga a corriente "pulsecurrent", luego a "discurrent"
+	-- finalmente un nuevo pulso a "pulsecurrent"
+	
+	reset()
+	
 	-- Creación buffer para guardar datos
-	reset() 
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
@@ -446,9 +461,11 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 end
 
 function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
+	-- Descarga parcial a corriente "discurrent" hasta que se descargan "discap" [mAh]
+	
+	reset()
 	
 	-- Creación buffer para guardar datos
-	reset() 
 	ExtBuffer = buffer.make(300000)
 	
 	-- Definicion de archivo data
