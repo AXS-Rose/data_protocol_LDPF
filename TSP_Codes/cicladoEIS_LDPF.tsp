@@ -8,7 +8,8 @@ function cicladoEIS_LDPF(ciclos_macro)
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	file.write(FileNumber, "Current, Voltage, Capacity, Cumulative_capacity, Seconds, Test_State, SOC\r\n")
-
+	file.close(FileNumber)
+	
 	-- El keithley toma control de la prueba
 	keithley_control() 
 	
@@ -17,7 +18,7 @@ function cicladoEIS_LDPF(ciclos_macro)
 	delay(2)
 	print('keithley esta realizando las pruebas iniciales')
 	discharge(2.5, 2.5, 1, -1) -- (voltaje descargado,corriente de descarga, número de identificación data, SOC en data)
-	resting(2.5, 360, 2, -2) -- esta es una descarga a 0A (voltaje limite descarga,segundos de descanso,número de identificación data, SOC en data)
+	resting(2.5, 1200, 2, -2) -- esta es una descarga a 0A (voltaje limite descarga,segundos de descanso,número de identificación data, SOC en data)
 	print('keithley termino las pruebas iniciales')
 	
 	for j = 1, ciclos_macro do
@@ -73,5 +74,4 @@ function cicladoEIS_LDPF(ciclos_macro)
 	captotal_carga = charge(4.2, 1.25, 0.05, 3, -4) -- (voltaje carga,corriente carga,corriente de corte CV, número de identificación data)
 	smu.source.output=smu.OFF
 	ExtBuffer.clear()
-	file.close(FileNumber)
 end

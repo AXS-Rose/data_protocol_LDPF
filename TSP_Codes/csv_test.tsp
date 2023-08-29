@@ -1,4 +1,4 @@
-function read_csv(file_name)
+function read_csv(voltlimit, test_number, SOC)
 	reset()
 	
 	-- Creación buffer para guardar datos
@@ -6,33 +6,34 @@ function read_csv(file_name)
 	buffer.write.format(csv_buffer, buffer.UNIT_AMP, buffer.DIGITS_8_5)
 	
 	-- Se abre el archivo para guardar data
-	FileNumber=file.open("/usb1/"..file_name,file.MODE_READ)
+	FileNumber=file.open("/usb1/csv_test_.csv",file.MODE_READ)
 	
+	contador = 0
 	while true do
-		var = file.read(csv_buffer, file.READ_LINE)
 		
+		var = file.read(FileNumber, file.READ_LINE)
+
 		if var == nil then
+			print("var nil")
 			break
 		end
 		
-		buffer.write.reading(csv_buffer, var)
+		numvar = var + 0 
+		print(numvar)
+		
+		buffer.write.reading(csv_buffer, numvar)
+		contador = (contador+1)
 	end
 	file.close(FileNumber)
-end
-
-function custom_discharge(voltlimit, test_number)
-	-- Función para descargar una celda hasta el voltaje de corte dado
-	-- discharge(voltaje descargado,corriente de descarga, número de identificación data)
 	
-	reset()
-	
-	-- Creación buffer para guardar datos
 	ExtBuffer = buffer.make(300000)
 	
-	-- Se abre el archivo para guardar data
-	FileNumber=file.open("/usb1/ReadData.csv",file.MODE_READ)
+	keithley_control()
 	
-	test_state = test_number -- Numero identificación test
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
+	
+	test_state = test_number
 
 	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
 	smu.measure.sense = smu.SENSE_4WIRE -- Se cambia el sistema de medición a 4-wire para más precisión
@@ -55,8 +56,9 @@ function custom_discharge(voltlimit, test_number)
 	display.changescreen(display.SCREEN_USER_SWIPE)
 	
 	while true do
+		
 		-- definición de variables por ciclo
-		smu.source.ilimit.level=file.read(FileNumber,file.READ_LINE)
+		smu.source.ilimit.level=csv_buffer[iteration]
 		curr=smu.measure.read(ExtBuffer)
 		volt=ExtBuffer.sourcevalues[iteration]
 		time1=ExtBuffer.relativetimestamps[iteration]
@@ -76,23 +78,25 @@ function custom_discharge(voltlimit, test_number)
 			captotal = captotal + capacity
 		end
 		
-		-- Se guardan, printean y muestran en keithley los datos
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state) 
 		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_state,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
+		
+		if iteration > contador then
+			print("fin perfil")
+			break
+		end
+		
 		iteration2=(iteration2+1)
 		delay(1)
 		aux=(aux+1)
 	end
-	
 	-- se desconecta la carga del equipo
 	smu.source.output=smu.OFF
 	
 	-- se limpia el buffer
 	ExtBuffer.clear()
-	
-	-- Se cierra el archivo de data (NECESARIO PARA QUE SE ESCRIBAN, SINO SE PUEDEN GUARDAR EN EL BUFFER Y NO ESCRIBIR NADA)
 	file.close(FileNumber)
 end
