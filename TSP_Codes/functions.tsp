@@ -1,39 +1,39 @@
-function discharge(voltlimit, discurrent, test_number, SOC) 
+function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal) 
 	-- (voltaje descargado,corriente de descarga, número de identificación data)
 	
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
 	
+	-- Se aseguran que la celda esté conectada al keithley
 	keithley_control()
 	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
-	
-	test_state = test_number
 
-	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
-	smu.measure.sense = smu.SENSE_4WIRE -- Se cambia el sistema de medición a 4-wire para más precisión
-	smu.source.func = smu.FUNC_DC_VOLTAGE -- Se alimenta voltaje
-	smu.source.offmode = smu.OFFMODE_HIGHZ -- Modo cuando la carga de desconecta para aislar el equipo
-	smu.source.level = voltlimit-0.05 -- Fijar inferior a voltlimit
+	smu.measure.func = smu.FUNC_DC_CURRENT 	-- Se mide corriente
+	smu.measure.sense = smu.SENSE_4WIRE 	-- Se cambia el sistema de medición a 4-wire para más precisión
+	smu.source.func = smu.FUNC_DC_VOLTAGE 	-- Se controla el voltaje
+	smu.source.offmode = smu.OFFMODE_HIGHZ 	-- Modo cuando la carga de desconecta para aislar el equipo
+	smu.source.level = voltlimit-0.05 		-- Fijar inferior a voltlimit para asegurar descarga constante
+	smu.source.range = 7					-- Asegura lectura de voltaje para valores menores a 7V
 	smu.measure.terminals = smu.TERMINALS_FRONT
 	smu.source.readback = smu.ON
 	
-	-- definición de variables del proceso
+	-- Definición de variables del proceso
 	deltatime = 0
 	capacity = 0
 	captotal = 0
-	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
 	aux = 1
 	iteration=1
 	iteration2=1
+	SOC = SOC_0
 	
 	smu.source.output=smu.ON -- Se inicia la conexión con la carga
 	display.changescreen(display.SCREEN_USER_SWIPE)
 	
 	while true do
-		-- definición de variables por ciclo
+		-- Definición de variables por ciclo
 		smu.source.ilimit.level=-discurrent
 		curr=smu.measure.read(ExtBuffer)
 		volt=ExtBuffer.sourcevalues[iteration]
@@ -41,27 +41,31 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 		time2=ExtBuffer.timestamps[iteration2]
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
 		
-		-- detección de limite de voltaje
+		-- Detección de limite de voltaje
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
 			break 
 		end
 		
-		-- capacidad acumulada
+		-- Capacidad acumulada
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh
+			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
+				SOC = SOC + (capacity/cell_captotal)*100
+			end
 			captotal = captotal + capacity
 		end
 		
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state) 
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_state,SOC))
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number) 
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
+		
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
 		iteration2=(iteration2+1)
-		delay(1)
 		aux=(aux+1)
+		delay(1)
 	end
 	
 	-- se desconecta la carga del equipo
@@ -72,7 +76,7 @@ function discharge(voltlimit, discurrent, test_number, SOC)
 	file.close(FileNumber)
 end
 
-function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
+function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_captotal)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -82,23 +86,22 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
-	
-	test_state = test_number
 
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
 	smu.source.func=smu.FUNC_DC_VOLTAGE
 	smu.source.offmode=smu.OFFMODE_HIGHZ
-	smu.source.level=voltlimit --Mismo valor de voltLimit
+	smu.source.level=voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
+	smu.source.range = 7					-- Asegura lectura de voltaje para valores menores a 7V
 	smu.source.ilimit.level=charcurrent
-	
-	voltLimit=voltlimit
 	
 	smu.source.output=smu.ON
 	
 	display.changescreen(display.SCREEN_USER_SWIPE)
+	
+	SOC = SOC_0
 	aux2=1
 	deltatime = 0
 	capacity = 0
@@ -114,7 +117,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 		time2=ExtBuffer.timestamps[iteration2]
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
 		
-		if curr <= currlimit and curr > 0.0001 then
+		if curr <= currlimit then
 			iteration2=(iteration2+1)
 			break
 		end
@@ -122,10 +125,13 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 		if aux2 >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh
+			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
+				SOC = SOC + (capacity/cell_captotal)*100
+			end
 			captotal_carga = captotal_carga + capacity
 		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_carga, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal_carga,time2,test_state,SOC))
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_carga, 'SOC', SOC, 'Test state', test_number)
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal_carga,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt))
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
@@ -142,7 +148,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC)
 	return captotal_carga
 end
 
-function resting(voltlimit, contador_rest, test_number , SOC)
+function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -153,27 +159,26 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
-	test_state = test_number
-
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
 	smu.source.func=smu.FUNC_DC_VOLTAGE
 	smu.source.offmode=smu.OFFMODE_HIGHZ
-	smu.source.level=(voltlimit) -- Fijar inferior a voltlimit
+	smu.source.level=voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
 	
+	SOC = SOC_0
 	deltatime = 0
 	capacity = 0
 	captotal = 0
-	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
 	aux = 1
-	smu.source.output=smu.ON
-	display.changescreen(display.SCREEN_USER_SWIPE)
 	iteration=1
 	iteration2=1
 	contador = 1
 	ncontador = contador_rest
+	
+	smu.source.output=smu.ON
+	display.changescreen(display.SCREEN_USER_SWIPE)
 	
 	while true do
 		smu.source.ilimit.level=-0.0001
@@ -190,12 +195,15 @@ function resting(voltlimit, contador_rest, test_number , SOC)
 		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
+				SOC = SOC + (capacity/cell_captotal)*100
+			end
 			captotal = captotal + capacity
 		end
 		
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_state,SOC))
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number)
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
@@ -220,8 +228,6 @@ function vocbor_measure(voltlimit, test_number, SOC)
 
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
-
-	test_state = test_number
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
@@ -236,12 +242,13 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	captotal = 0
 	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
 	aux = 1
-	smu.source.output=smu.ON
-	display.changescreen(display.SCREEN_USER_SWIPE)
 	iteration=1
 	iteration2=1
 	contador = 1
 	ncontador = 1
+	
+	smu.source.output=smu.ON
+	display.changescreen(display.SCREEN_USER_SWIPE)
 	
 	while true do
 		smu.source.ilimit.level=-0.0001
@@ -258,11 +265,11 @@ function vocbor_measure(voltlimit, test_number, SOC)
 		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
 			captotal = captotal + capacity
 		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_state,SOC))
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number)
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
@@ -277,8 +284,8 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	file.close(FileNumber)
 end
 
-function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_number_2, test_number_3)
-
+function capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_captotal)
+	
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
@@ -292,21 +299,16 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	smu.measure.sense=smu.SENSE_4WIRE
 	smu.source.func=smu.FUNC_DC_VOLTAGE
 	smu.source.offmode=smu.OFFMODE_HIGHZ
-	smu.source.level=(voltlimit - 0.05) -- Fijar inferior a voltlimit
+	smu.source.level=voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
 	
+	SOC = SOC_0
 	deltatime = 0
 	capacity = 0
-	captotal_pulso = 0
-	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
-	
-	-- Pulso Fuerte --
-	test_state = test_number_1
-	
+	captotal = 0
 	aux = 1
-	nciclos = 10
-	ciclos=1
+	
 	smu.source.output=smu.ON
 	
 	display.changescreen(display.SCREEN_USER_SWIPE)
@@ -314,210 +316,179 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	iteration=1
 	iteration2=1
 	while true do
-	
-		if ciclos > nciclos then
-			break
-		end
-		
-		smu.source.ilimit.level=-pulsecurrent
+		smu.source.ilimit.level=current
 		curr=smu.measure.read(ExtBuffer)
 		volt=ExtBuffer.sourcevalues[iteration]
 		time1=ExtBuffer.relativetimestamps[iteration]
 		time2=ExtBuffer.timestamps[iteration2]
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
 		
-		if volt <= voltlimit then 
-			iteration2=(iteration2+1)
-			break 
-		end
-		
-		if aux >= 2 then
-			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			captotal_pulso = captotal_pulso + capacity
-		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal_pulso,time2,test_state,SOC))
-		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
-		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
-		iteration=(iteration+1)
-		iteration2=(iteration2+1)
-		delay(1)
-		aux=(aux+1)
-		ciclos = (ciclos+1)
-	end
-	
-	smu.source.output=smu.OFF
-	
-	ExtBuffer.clear()
-	
-	-- Descarga Nominal --
-	test_state = test_number_2
-	
-	aux = 1
-	nciclos = 10
-	ciclos=1
-	smu.source.output=smu.ON
-	
-	display.changescreen(display.SCREEN_USER_SWIPE)
-	
-	iteration=1
-	iteration2=1
-	while true do
-	
-		if ciclos > nciclos then
+		-- Limites de voltaje por seguridad
+		if current > 0 -- Caso carga
+			if volt >= voltlimit then 
+				iteration2=(iteration2+1)
+				break 
+			end
+		elseif current < 0 then -- Caso descarga
+			if volt <= voltlimit then 
+				iteration2=(iteration2+1)
+				break 
+			end
+		else -- Si la corriente es nula, decir que el valor es invalido
+			print('Valor inválido de corriente')
 			break
 		end
 		
-		smu.source.ilimit.level=-discurrent
-		curr=smu.measure.read(ExtBuffer)
-		volt=ExtBuffer.sourcevalues[iteration]
-		time1=ExtBuffer.relativetimestamps[iteration]
-		time2=ExtBuffer.timestamps[iteration2]
-		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
-		
-		if volt <= voltlimit then 
-			iteration2=(iteration2+1)
-			break 
-		end
-		
-		if aux >= 2 then
-			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			captotal_pulso = captotal_pulso + capacity
-		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal_pulso,time2,test_state,SOC))
-		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
-		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
-		iteration=(iteration+1)
-		iteration2=(iteration2+1)
-		delay(1)
-		aux=(aux+1)
-		ciclos = (ciclos+1)
-	end
-	
-	smu.source.output=smu.OFF
-	
-	ExtBuffer.clear()
-	
-	-- Pulso Fuerte --
-	test_state = test_number_3
-	
-	aux = 1
-	nciclos = 10
-	ciclos=1
-	smu.source.output=smu.ON
-	
-	display.changescreen(display.SCREEN_USER_SWIPE)
-	
-	iteration=1
-	iteration2=1
-	while true do
-	
-		if ciclos > nciclos then
+		-- Detección de capacidad carga/descarga
+		if current > 0 -- Caso carga
+			if captotal > load_cap then 
+				iteration2 = iteration2 + 1
+				break
+			end
+		elseif current < 0 then -- Caso descarga
+			if captotal < load_cap then 
+				iteration2 = iteration2 + 1
+				break
+			end
+		else -- Si la corriente es nula, decir que el valor es invalido
+			print('Valor inválido de corriente')
 			break
 		end
 		
-		smu.source.ilimit.level=-pulsecurrent
-		curr=smu.measure.read(ExtBuffer)
-		volt=ExtBuffer.sourcevalues[iteration]
-		time1=ExtBuffer.relativetimestamps[iteration]
-		time2=ExtBuffer.timestamps[iteration2]
-		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
-		
-		if volt <= voltlimit then 
-			iteration2=(iteration2+1)
-			break 
-		end
-		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			captotal_pulso = captotal_pulso + capacity
+			capacity = curr*deltatime/3.6 -- en mAh
+			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
+				SOC = SOC + (capacity/cell_captotal)*100
+			end
+			captotal = captotal + capacity
 		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal_pulso,time2,test_state,SOC))
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number)
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
 		iteration2=(iteration2+1)
 		delay(1)
 		aux=(aux+1)
-		ciclos = (ciclos+1)
 	end
 	
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
-	
-	return captotal_pulso
 end
 
-function capacity_discharge(voltlimit, discurrent, discap, test_number,SOC)
+function custom_profile(test_number, SOC_0, captotal_0, upper_voltlimit, lower_voltlimit)
+	
+	reset()
 	
 	-- Creación buffer para guardar datos
-	reset() 
+	csv_buffer = buffer.make(300000, buffer.STYLE_WRITABLE)
+	buffer.write.format(csv_buffer, buffer.UNIT_AMP, buffer.DIGITS_8_5)
+	
+	-- Se abre el archivo para guardar data
+	FileNumber=file.open("/usb1/csv_test_.csv",file.MODE_READ)
+	
+	contador = 0
+	while true do
+		
+		var = file.read(FileNumber, file.READ_LINE)
+
+		if var == nil then
+			print("var nil")
+			break
+		end
+		
+		numvar = var + 0 
+		print(numvar)
+		
+		buffer.write.reading(csv_buffer, numvar)
+		contador = (contador+1)
+	end
+	file.close(FileNumber)
+	
 	ExtBuffer = buffer.make(300000)
 	
 	keithley_control()
 	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
+
+	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
+	smu.measure.sense = smu.SENSE_4WIRE -- Se cambia el sistema de medición a 4-wire para más precisión
+	smu.source.func = smu.FUNC_DC_VOLTAGE -- Se alimenta voltaje
+	smu.source.offmode = smu.OFFMODE_HIGHZ -- Modo cuando la carga de desconecta para aislar el equipo
+	smu.measure.terminals = smu.TERMINALS_FRONT
+	smu.source.readback = smu.ON
 	
-	test_state = test_number
-	
-	smu.measure.func=smu.FUNC_DC_CURRENT
-	smu.measure.sense=smu.SENSE_4WIRE
-	smu.source.func=smu.FUNC_DC_VOLTAGE
-	smu.source.offmode=smu.OFFMODE_HIGHZ
-	smu.source.level=(voltlimit - 0.05) -- Fijar inferior a voltlimit
-	smu.measure.terminals=smu.TERMINALS_FRONT
-	smu.source.readback=smu.ON
-	
+	-- definición de variables del proceso
 	deltatime = 0
 	capacity = 0
 	captotal = 0
-	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
 	aux = 1
-	
-	smu.source.output=smu.ON
-	
-	display.changescreen(display.SCREEN_USER_SWIPE)
-	
 	iteration=1
 	iteration2=1
+	SOC = SOC_0
+	
+	smu.source.range=7
+	smu.source.output=smu.ON -- Se inicia la conexión con la carga
+	display.changescreen(display.SCREEN_USER_SWIPE)
+	
 	while true do
-		smu.source.ilimit.level=-discurrent
+		
+		-- definición de variables por ciclo
+		smu.source.ilimit.level=csv_buffer[iteration]
+		
+		-- detección de carga/descarga
+		if csv_buffer[iteration] <= 0 then 
+			smu.source.level = (lower_voltlimit-0.05) -- Caso descarga
+		else
+			smu.source.level = upper_voltlimit -- Caso carga
+		end
+		
 		curr=smu.measure.read(ExtBuffer)
 		volt=ExtBuffer.sourcevalues[iteration]
 		time1=ExtBuffer.relativetimestamps[iteration]
 		time2=ExtBuffer.timestamps[iteration2]
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
 		
-		if captotal > discap then 
-			iteration2 = iteration2 + 1
-			break
+		-- detección de limite de voltaje inferior
+		if volt <= lower_voltlimit then 
+			iteration2=(iteration2+1)
+			break 
 		end
 		
+		-- capacidad acumulada
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
+				SOC = SOC + (capacity/cell_captotal)*100
+			end
 			captotal = captotal + capacity
 		end
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state)
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n", curr,volt,capacity,captotal,time2,test_state,SOC))
+		
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number) 
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_number,SOC))
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
+		
+		if iteration > contador then
+			print("fin perfil")
+			break
+		end
+		
 		iteration2=(iteration2+1)
 		delay(1)
 		aux=(aux+1)
 	end
 	
+	-- se desconecta la carga del equipo
 	smu.source.output=smu.OFF
 	
+	-- se limpia el buffer
 	ExtBuffer.clear()
 	file.close(FileNumber)
 end
@@ -561,107 +532,4 @@ function EIS_control()
 		print(digio.line[2].state)
 		delay(1)
 	end
-end
-
-function custom_profile(voltlimit, test_number, SOC)
-	reset()
-	
-	-- Creación buffer para guardar datos
-	csv_buffer = buffer.make(300000, buffer.STYLE_WRITABLE)
-	buffer.write.format(csv_buffer, buffer.UNIT_AMP, buffer.DIGITS_8_5)
-	
-	-- Se abre el archivo para guardar data
-	FileNumber=file.open("/usb1/csv_test_.csv",file.MODE_READ)
-	
-	contador = 0
-	while true do
-		
-		var = file.read(FileNumber, file.READ_LINE)
-
-		if var == nil then
-			print("var nil")
-			break
-		end
-		
-		numvar = var + 0 
-		print(numvar)
-		
-		buffer.write.reading(csv_buffer, numvar)
-		contador = (contador+1)
-	end
-	file.close(FileNumber)
-	
-	ExtBuffer = buffer.make(300000)
-	
-	keithley_control()
-	
-	-- Definicion de archivo data
-	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
-	
-	test_state = test_number
-
-	smu.measure.func = smu.FUNC_DC_CURRENT -- Se mide corriente
-	smu.measure.sense = smu.SENSE_4WIRE -- Se cambia el sistema de medición a 4-wire para más precisión
-	smu.source.func = smu.FUNC_DC_VOLTAGE -- Se alimenta voltaje
-	smu.source.offmode = smu.OFFMODE_HIGHZ -- Modo cuando la carga de desconecta para aislar el equipo
-	smu.source.level = (voltlimit-0.05) -- Fijar inferior a voltlimit
-	smu.measure.terminals = smu.TERMINALS_FRONT
-	smu.source.readback = smu.ON
-	
-	-- definición de variables del proceso
-	deltatime = 0
-	capacity = 0
-	captotal = 0
-	voltlimit=voltlimit -- Debe ser mayor que smu.source.level
-	aux = 1
-	iteration=1
-	iteration2=1
-	
-	smu.source.output=smu.ON -- Se inicia la conexión con la carga
-	display.changescreen(display.SCREEN_USER_SWIPE)
-	
-	while true do
-		
-		-- definición de variables por ciclo
-		smu.source.ilimit.level=csv_buffer[iteration]
-		curr=smu.measure.read(ExtBuffer)
-		volt=ExtBuffer.sourcevalues[iteration]
-		time1=ExtBuffer.relativetimestamps[iteration]
-		time2=ExtBuffer.timestamps[iteration2]
-		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
-		
-		-- detección de limite de voltaje
-		if volt <= voltlimit then 
-			iteration2=(iteration2+1)
-			break 
-		end
-		
-		-- capacidad acumulada
-		if aux >= 2 then
-			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			captotal = captotal + capacity
-		end
-		
-		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_state) 
-		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_state,SOC))
-		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
-		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
-		iteration=(iteration+1)
-		
-		if iteration > contador then
-			print("fin perfil")
-			break
-		end
-		
-		iteration2=(iteration2+1)
-		delay(1)
-		aux=(aux+1)
-	end
-	-- se desconecta la carga del equipo
-	smu.source.output=smu.OFF
-	
-	-- se limpia el buffer
-	ExtBuffer.clear()
-	file.close(FileNumber)
 end
