@@ -284,10 +284,11 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	file.close(FileNumber)
 end
 
-function capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_captotal)
+function cc_capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_captotal, charge_currlimit)
+	
+	reset()
 	
 	-- Creación buffer para guardar datos
-	reset() 
 	ExtBuffer = buffer.make(300000)
 	
 	keithley_control()
@@ -324,10 +325,12 @@ function capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_ca
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
 		
 		-- Limites de voltaje por seguridad
-		if current > 0 -- Caso carga
+		if current > 0 then-- Caso carga
 			if volt >= voltlimit then 
-				iteration2=(iteration2+1)
-				break 
+				if curr <= charge_currlimit then
+					iteration2=(iteration2+1)
+					break
+				end 
 			end
 		elseif current < 0 then -- Caso descarga
 			if volt <= voltlimit then 
@@ -340,13 +343,13 @@ function capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_ca
 		end
 		
 		-- Detección de capacidad carga/descarga
-		if current > 0 -- Caso carga
-			if captotal > load_cap then 
+		if current > 0 then -- Caso carga
+			if captotal >= load_cap then 
 				iteration2 = iteration2 + 1
 				break
 			end
 		elseif current < 0 then -- Caso descarga
-			if captotal < load_cap then 
+			if captotal <= load_cap then 
 				iteration2 = iteration2 + 1
 				break
 			end
@@ -377,9 +380,11 @@ function capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_ca
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	
+	return SOC
 end
 
-function custom_profile(test_number, SOC_0, captotal_0, upper_voltlimit, lower_voltlimit)
+function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit)
 	
 	reset()
 	
@@ -388,7 +393,7 @@ function custom_profile(test_number, SOC_0, captotal_0, upper_voltlimit, lower_v
 	buffer.write.format(csv_buffer, buffer.UNIT_AMP, buffer.DIGITS_8_5)
 	
 	-- Se abre el archivo para guardar data
-	FileNumber=file.open("/usb1/csv_test_.csv",file.MODE_READ)
+	FileNumber=file.open("/usb1/csv_test.csv",file.MODE_READ)
 	
 	contador = 0
 	while true do
@@ -455,6 +460,11 @@ function custom_profile(test_number, SOC_0, captotal_0, upper_voltlimit, lower_v
 		
 		-- detección de limite de voltaje inferior
 		if volt <= lower_voltlimit then 
+			iteration2=(iteration2+1)
+			break 
+		end
+		
+		if SOC <= 0 then 
 			iteration2=(iteration2+1)
 			break 
 		end
