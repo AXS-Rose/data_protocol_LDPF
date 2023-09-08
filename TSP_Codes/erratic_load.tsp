@@ -1,4 +1,4 @@
-function erratic_load(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit,charcurrent)
+function erratic_load(test_number1, test_number2, test_number3, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit,charcurrent,rest_count)
 	
 	reset()
 	
@@ -79,6 +79,9 @@ function erratic_load(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_
 	csv_iteration=1
 	SOC = SOC_0
 	soc_iteration = 1
+	contador_rest = 1
+	curr_mode=1 -- 1-> profile 2->carga 3-> Descanso
+	prev_mode=2
 	
 	smu.source.range=7
 	smu.source.output=smu.ON -- Se inicia la conexión con la carga
@@ -86,21 +89,52 @@ function erratic_load(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_
 	
 	while true do
 		
-		if SOC <= SOC_buffer[soc_iteration] then 
-			charge_load = SOC_buffer[soc_iteration+1]*cell_captotal/100
-			while SOC <= SOC_buffer[soc_iteration] do
-				smu.source.ilimit.level=charcurrent
-				smu.source.level = upper_voltlimit -- Caso carga
-			end
-			soc_iteration = soc_iteration+2
-		else
-			smu.source.ilimit.level=csv_buffer[csv_iteration]
-			if csv_buffer[csv_iteration] <= 0 then 
-				smu.source.level = (lower_voltlimit-0.05) -- Caso descarga
+		if curr_mode==1 then
+			test_number = test_number1
+			if SOC <= SOC_buffer[soc_iteration] then --Llegue a un punto bajo
+				curr_mode =3
+				prev_mode=1
 			else
-				smu.source.level = upper_voltlimit -- Caso carga
+				smu.source.ilimit.level=csv_buffer[csv_iteration]
+				if csv_buffer[csv_iteration] <= 0 then 
+					smu.source.level = (lower_voltlimit-0.05) 
+				else
+					smu.source.level = upper_voltlimit 
+				end
+				csv_iteration = csv_iteration + 1
 			end
-			csv_iteration = csv_iteration + 1
+		end
+			
+		if curr_mode == 2 then
+			test_number = test_number2
+			if SOC >= SOC_buffer[soc_iteration+1] then
+				curr_mode = 3
+				prev_mode=2
+				soc_iteration = soc_iteration + 2
+			else
+				smu.source.ilimit.level=charcurrent
+				smu.source.level = upper_voltlimit
+			end
+		end	
+		
+		if curr_mode == 3 then
+			test_number = test_number3
+			if contador_rest < rest_count then
+				smu.source.ilimit.level=-0.0001
+				smu.source.level = upper_voltlimit
+			elseif contador_rest == rest_count and prev_mode == 1 then
+				smu.source.ilimit.level=-0.0001
+				smu.source.level = upper_voltlimit
+				curr_mode = 2
+				contador_rest = 1
+			else
+				smu.source.ilimit.level=-0.0001
+				smu.source.level = upper_voltlimit
+				curr_mode = 1
+				contador_rest = 1
+			end
+		else
+			print('curr_mode invalid input'	)
 		end
 		
 		curr=smu.measure.read(ExtBuffer)
@@ -108,12 +142,6 @@ function erratic_load(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_
 		time1=ExtBuffer.relativetimestamps[iteration]
 		time2=ExtBuffer.timestamps[iteration2]
 		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
-		
-		-- detección de limite de voltaje inferior
-		if volt <= lower_voltlimit then 
-			iteration2=(iteration2+1)
-			break 
-		end
 		
 		-- capacidad acumulada
 		if aux >= 2 then
@@ -130,9 +158,19 @@ function erratic_load(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_
 		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		
+		-- detección de limite de voltaje inferior
+		if volt <= lower_voltlimit then 
+			iteration2=(iteration2+1)
+			break 
+		end
 		
-		if iteration2 > contador then
+		if csv_iteration > contador then
 			print("fin perfil")
+			break
+		end
+		
+		if soc_iteration > contador_soc then
+			print("fin perfil soc")
 			break
 		end
 		
