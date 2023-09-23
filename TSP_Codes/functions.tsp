@@ -1,5 +1,5 @@
 function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal) 
-	-- (voltaje descargado,corriente de descarga, número de identificación data)
+	-- (voltaje limite descarga,corriente de descarga, número de identificación data, SOC inicial, capacidad total celda)
 	
 	-- Creación buffer para guardar datos
 	reset() 
@@ -77,6 +77,7 @@ function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal)
 end
 
 function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_captotal)
+	-- (voltaje limite carga,corriente de carga, límite corriente carga, número de identificación data, SOC inicial, capacidad total celda)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -149,6 +150,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_capt
 end
 
 function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
+	-- (voltaje limite descarga,iteraciones de descanso, número de identificación data, SOC inicial, capacidad total celda)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -219,6 +221,7 @@ function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
 end
 
 function vocbor_measure(voltlimit, test_number, SOC)
+	-- (voltaje limite descarga, número de identificación data, SOC inicial)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -285,6 +288,7 @@ function vocbor_measure(voltlimit, test_number, SOC)
 end
 
 function cc_capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_captotal, charge_currlimit)
+	-- (voltaje limite descarga/carga, corriente de descarga/carga, mAh de descarga/carga, número de identificación data, SOC inicial, capacidad total celda, limite de corriente de carga)
 	
 	reset()
 	
@@ -385,6 +389,7 @@ function cc_capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell
 end
 
 function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit)
+	-- (número de identificación data, SOC inicial, capacidad total celda, voltaje limite carga, voltaje limite descarga)
 	
 	reset()
 	

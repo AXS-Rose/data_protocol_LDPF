@@ -1,4 +1,4 @@
-function erratic_load(test_number1, test_number2, test_number3, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit,charcurrent,rest_count)
+function erratic_load_EIS(test_number1, test_number2, test_number3, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit,charcurrent,rest_count)
 	
 	reset()
 	
@@ -127,11 +127,15 @@ function erratic_load(test_number1, test_number2, test_number3, SOC_0, cell_capt
 				smu.source.level = upper_voltlimit
 				curr_mode = 2
 				contador_rest = 1
+				EIS_control()
+				keithley_control()
 			else
 				smu.source.ilimit.level=-0.0001
 				smu.source.level = upper_voltlimit
 				curr_mode = 1
 				contador_rest = 1
+				EIS_control()
+				keithley_control()
 			end
 		else
 			print('curr_mode invalid input'	)
