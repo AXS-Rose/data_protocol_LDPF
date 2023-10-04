@@ -26,7 +26,7 @@ function cicladoEIS(ciclos_macro, lower_voltlimit, upper_voltlimit, cell_captota
 		delay(10)
 		print('keithley esta realizando las pruebas')
 		captotal_carga = charge(upper_voltlimit, charcurrent, currlimit, 0, cell_captotal, 3)
-		resting(lower_voltlimit, 600, 0, cell_captotal, 2)
+		resting(lower_voltlimit, 600, 100, cell_captotal, 2)
 		
 		-- Definición de variables iniciales de la celda
 		SOC = 100
@@ -52,10 +52,10 @@ function cicladoEIS(ciclos_macro, lower_voltlimit, upper_voltlimit, cell_captota
 			
 			-- PRUEBA KEITHLEY MICRO
 			print('el keithley esta haciendo pruebas dentro del ciclo micro')
-			SOC = cc_capacity_load(lower_voltlimit, discurrent, cap_parcial, SOC, cell_captotal, currlimit, 5)
-			vocbor_measure(lower_voltlimit, SOC, 6)
+			SOC = cc_capacity_load(lower_voltlimit, discurrent, cap_parcial, SOC, cell_captotal, currlimit, 4)
+			vocbor_measure(lower_voltlimit, SOC, 5)
 			resting(lower_voltlimit, contador_rest, SOC, cell_captotal, 2)
-			vocbor_measure(lower_voltlimit, SOC, 8)
+			vocbor_measure(lower_voltlimit, SOC, 6)
 			print('el keithley dejo de hacer pruebas dentro del ciclo micro')
 			
 			-- PRUEBA EIS MICRO

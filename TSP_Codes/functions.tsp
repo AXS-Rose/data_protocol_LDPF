@@ -1,4 +1,4 @@
-function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal) 
+function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number) 
 	-- (voltaje descargado,corriente de descarga, número de identificación data)
 	
 	-- Creación buffer para guardar datos
@@ -51,9 +51,7 @@ function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal)
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh
-			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
-				SOC = SOC + (capacity/cell_captotal)*100
-			end
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal = captotal + capacity
 		end
 		
@@ -76,7 +74,7 @@ function cc_discharge(voltlimit, discurrent, test_number, SOC_0, cell_captotal)
 	file.close(FileNumber)
 end
 
-function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_captotal)
+function charge(voltlimit, charcurrent, currlimit, SOC_0, cell_captotal, test_number)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -125,9 +123,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_capt
 		if aux2 >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh
-			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
-				SOC = SOC + (capacity/cell_captotal)*100
-			end
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal_carga = captotal_carga + capacity
 		end
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_carga, 'SOC', SOC, 'Test state', test_number)
@@ -148,7 +144,7 @@ function charge(voltlimit, charcurrent, currlimit, test_number, SOC_0, cell_capt
 	return captotal_carga
 end
 
-function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
+function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -196,9 +192,7 @@ function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
-				SOC = SOC + (capacity/cell_captotal)*100
-			end
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal = captotal + capacity
 		end
 		
@@ -218,7 +212,7 @@ function resting(voltlimit, contador_rest, test_number, SOC_0, cell_captotal)
 	file.close(FileNumber)
 end
 
-function vocbor_measure(voltlimit, test_number, SOC)
+function vocbor_measure(voltlimit, SOC, test_number)
 
 	-- Creación buffer para guardar datos
 	reset() 
@@ -284,7 +278,7 @@ function vocbor_measure(voltlimit, test_number, SOC)
 	file.close(FileNumber)
 end
 
-function cc_capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell_captotal, charge_currlimit)
+function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, charge_currlimit, test_number)
 	
 	reset()
 	
@@ -361,9 +355,7 @@ function cc_capacity_load(voltlimit, current, load_cap, test_number, SOC_0, cell
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh
-			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
-				SOC = SOC + (capacity/cell_captotal)*100
-			end
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal = captotal + capacity
 		end
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number)
@@ -473,9 +465,7 @@ function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lowe
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
 			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
-			if SOC >= 0 then -- Solo si tengo valores de SOC inicial
-				SOC = SOC + (capacity/cell_captotal)*100
-			end
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal = captotal + capacity
 		end
 		
