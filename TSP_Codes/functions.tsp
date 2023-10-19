@@ -44,6 +44,9 @@ function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number)
 		-- Detección de limite de voltaje
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
+			print('El voltaje de la celda es menor al voltaje minimo')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
@@ -72,6 +75,7 @@ function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number)
 	-- se limpia el buffer
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	print('Fin función de descarga')
 end
 
 function charge(voltlimit, charcurrent, currlimit, SOC_0, cell_captotal, test_number)
@@ -117,6 +121,9 @@ function charge(voltlimit, charcurrent, currlimit, SOC_0, cell_captotal, test_nu
 		
 		if curr <= currlimit then
 			iteration2=(iteration2+1)
+			print('La corriente de la celda es menor a la corriente mínima de carga')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break
 		end
 	
@@ -140,7 +147,8 @@ function charge(voltlimit, charcurrent, currlimit, SOC_0, cell_captotal, test_nu
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
-	
+	print('Fin función de carga')
+	print('Valor de captotal_carga = ',captotal_carga)
 	return captotal_carga
 end
 
@@ -162,6 +170,7 @@ function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 	smu.source.level=voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
+	smu.source.range = 7
 	
 	SOC = SOC_0
 	deltatime = 0
@@ -186,6 +195,9 @@ function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 		
 		if contador > ncontador then 
 			iteration2=(iteration2+1)
+			print('Se han realizado todas las iteraciones de descanso')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
@@ -210,6 +222,7 @@ function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	print('Fin función de descanso')
 end
 
 function vocbor_measure(voltlimit, SOC, test_number)
@@ -230,6 +243,7 @@ function vocbor_measure(voltlimit, SOC, test_number)
 	smu.source.level=(voltlimit - 0.05) -- Fijar inferior a voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
+	smu.source.range = 7
 	
 	deltatime = 0
 	capacity = 0
@@ -254,6 +268,9 @@ function vocbor_measure(voltlimit, SOC, test_number)
 		
 		if contador > ncontador then 
 			iteration2=(iteration2+1)
+			print('Se han realizado todas las iteraciones de medición voc_bor')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
@@ -276,6 +293,7 @@ function vocbor_measure(voltlimit, SOC, test_number)
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	print('Fin función de medición voc_bor')
 end
 
 function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, charge_currlimit, test_number)
@@ -297,6 +315,7 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 	smu.source.level=voltlimit
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
+	smu.source.range = 7
 	
 	SOC = SOC_0
 	deltatime = 0
@@ -323,16 +342,24 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 			if volt >= voltlimit then 
 				if curr <= charge_currlimit then
 					iteration2=(iteration2+1)
+					print('La corriente de la celda es menor a la corriente mínima de carga')
+					print('Último voltaje detectado= ',volt)
+					print('Última corriente detectada= ',curr)
 					break
 				end 
 			end
 		elseif current < 0 then -- Caso descarga
 			if volt <= voltlimit then 
 				iteration2=(iteration2+1)
+				print('El voltaje de la celda es menor al voltaje mínimo de descarga')
+				print('Último voltaje detectado= ',volt)
+				print('Última corriente detectada= ',curr)
 				break 
 			end
 		else -- Si la corriente es nula, decir que el valor es invalido
 			print('Valor inválido de corriente')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break
 		end
 		
@@ -340,15 +367,23 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 		if current > 0 then -- Caso carga
 			if captotal >= load_cap then 
 				iteration2 = iteration2 + 1
+				print('se cargo la capacidad pedida')
+				print('Último voltaje detectado= ',volt)
+				print('Última corriente detectada= ',curr)
 				break
 			end
 		elseif current < 0 then -- Caso descarga
-			if captotal <= load_cap then 
+			if captotal <= -load_cap then 
 				iteration2 = iteration2 + 1
+				print('se descargo la capacidad pedida')
+				print('Último voltaje detectado= ',volt)
+				print('Última corriente detectada= ',curr)
 				break
 			end
 		else -- Si la corriente es nula, decir que el valor es invalido
 			print('Valor inválido de corriente')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break
 		end
 		
@@ -372,6 +407,8 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 	
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	print('Fin función cc_capacity_load')
+	print('Último valor de SOC = ',SOC)
 	
 	return SOC
 end
@@ -453,11 +490,17 @@ function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lowe
 		-- detección de limite de voltaje inferior
 		if volt <= lower_voltlimit then 
 			iteration2=(iteration2+1)
+			print('El voltaje de la celda es menor al voltaje mínimo de descarga')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
 		if SOC <= 0 then 
 			iteration2=(iteration2+1)
+			print('El SOC de la celda es menor a 0')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
@@ -476,7 +519,9 @@ function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lowe
 		iteration=(iteration+1)
 		
 		if iteration > contador then
-			print("fin perfil")
+			print('El perfil ya no tiene más valores de corriente')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break
 		end
 		
@@ -491,6 +536,8 @@ function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lowe
 	-- se limpia el buffer
 	ExtBuffer.clear()
 	file.close(FileNumber)
+	
+	print('Fin función custom_load')
 end
 
 function keithley_control() 
