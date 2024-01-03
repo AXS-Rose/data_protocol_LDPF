@@ -12,7 +12,8 @@ function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number)
 	procedure = "cc_discharge"
 	
 	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
-	print("Function: cc_discharge","voltlimit: ", voltlimit,"discurrent: ", discurrent, "SOC_0: ", SOC_0, "cell_captotal: ",cell_captotal, "test_number", test_number) 
+	print("Function: ",procedure,"voltlimit: ", voltlimit,"discurrent: ", discurrent, "SOC_0: ", SOC_0, "cell_captotal: ",cell_captotal, "test_number", test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit","discurrent","SOC_0","cell_captotal","test_number"))
 	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,voltlimit,discurrent,SOC_0,cell_captotal,test_number))
 	file.close(FileNumber)
 	
@@ -96,6 +97,15 @@ function cccv_discharge(voltlimit, discurrent, curr_limit, SOC_0, cell_captotal,
 	-- Se aseguran que la celda esté conectada al keithley
 	keithley_control()
 	
+	-- Definicion de archivo procedure
+	procedure = "cccv_discharge"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure, "voltlimit: ",voltlimit,"discurrent: ",discurrent,"curr_limit: ",curr_limit,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit", "discurrent", "curr_limit", "SOC_0", "cell_captotal", "test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g\r\n",procedure,voltlimit, discurrent, curr_limit, SOC_0, cell_captotal, test_number))
+	file.close(FileNumber)
+	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
@@ -165,13 +175,22 @@ function cccv_discharge(voltlimit, discurrent, curr_limit, SOC_0, cell_captotal,
 	print('Fin función de descarga')
 end
 
-function charge(voltlimit, charcurrent, currlimit, SOC_0, cell_captotal, test_number)
+function charge(voltlimit, charcurrent, curr_limit, SOC_0, cell_captotal, test_number)
 
 	-- Creación buffer para guardar datos
 	reset() 
 	ExtBuffer = buffer.make(300000)
 	
 	keithley_control()
+	
+	-- Definicion de archivo procedure
+	procedure = "charge"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure, "voltlimit: ",voltlimit,"charcurrent: ",charcurrent,"curr_limit: ",curr_limit,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit", "charcurrent", "curr_limit", "SOC_0", "cell_captotal", "test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g\r\n",procedure,voltlimit, charcurrent, curr_limit, SOC_0, cell_captotal, test_number))
+	file.close(FileNumber)
 	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
@@ -247,6 +266,15 @@ function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 	
 	keithley_control()
 	
+	-- Definicion de archivo procedure
+	procedure = "resting"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure, "voltlimit: ",voltlimit,"contador_rest: ",contador_rest, "SOC_0: ",SOC_0, "cell_captotal: ",cell_captotal, "test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit","contador_rest", "SOC_0", "cell_captotal", "test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,voltlimit, contador_rest, SOC_0, cell_captotal, test_number))
+	file.close(FileNumber)
+	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
@@ -320,6 +348,15 @@ function vocbor_measure(voltlimit, SOC, test_number)
 
 	keithley_control()
 
+	-- Definicion de archivo procedure
+	procedure = "vocbor_measure"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure,"voltlimit: ",voltlimit,"SOC: ",SOC,"test_number: ", test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s\r\n",procedure,"voltlimit","SOC","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g\r\n",procedure,voltlimit, SOC, test_number))
+	file.close(FileNumber)
+
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
@@ -391,6 +428,15 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, cu
 	ExtBuffer = buffer.make(300000)
 	
 	keithley_control()
+	
+	-- Definicion de archivo procedure
+	procedure = "cc_capacity_load"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure,"voltlimit: ",voltlimit,"current: ",current,"load_cap: ",load_cap,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"currlimit: ",currlimit,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit","current","load_cap","SOC_0","cell_captotal","currlimit","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g,%g\r\n",procedure,voltlimit,current,load_cap,SOC_0,cell_captotal,currlimit,test_number))
+	file.close(FileNumber)
 	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
@@ -500,9 +546,18 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, cu
 	return SOC
 end
 
-function custom_profile(test_number, SOC_0, cell_captotal, upper_voltlimit, lower_voltlimit)
+function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test_number)
 	
 	reset()
+	
+	-- Definicion de archivo procedure
+	procedure = "custom_profile"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"upper_voltlimit: ",upper_voltlimit,"lower_voltlimit: ",lower_voltlimit,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","upper_voltlimit","lower_voltlimit","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test_number))
+	file.close(FileNumber)
 	
 	-- Creación buffer para guardar datos
 	csv_buffer = buffer.make(300000, buffer.STYLE_WRITABLE)
