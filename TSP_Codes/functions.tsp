@@ -8,6 +8,14 @@ function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number)
 	-- Se aseguran que la celda esté conectada al keithley
 	keithley_control()
 	
+	-- Definicion de archivo procedure
+	procedure = "cc_discharge"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: cc_discharge","voltlimit: ", voltlimit,"discurrent: ", discurrent, "SOC_0: ", SOC_0, "cell_captotal: ",cell_captotal, "test_number", test_number) 
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,voltlimit,discurrent,SOC_0,cell_captotal,test_number))
+	file.close(FileNumber)
+	
 	-- Definicion de archivo data
 	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 
@@ -45,6 +53,85 @@ function cc_discharge(voltlimit, discurrent, SOC_0, cell_captotal, test_number)
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
 			print('El voltaje de la celda es menor al voltaje minimo')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
+			break 
+		end
+		
+		-- Capacidad acumulada
+		if aux >= 2 then
+			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
+			capacity = curr*deltatime/3.6 -- en mAh
+			SOC = SOC + (capacity/cell_captotal)*100
+			captotal = captotal + capacity
+		end
+		
+		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal, 'SOC', SOC, 'Test state', test_number) 
+		file.write(FileNumber, string.format("%g,%g,%g,%g,%s,%g,%g\r\n",curr,volt,capacity,captotal,time2,test_number,SOC))
+		display.settext(display.TEXT1,string.format("voltage= %.4fV",volt)) 
+		
+		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
+		iteration=(iteration+1)
+		iteration2=(iteration2+1)
+		aux=(aux+1)
+		delay(1)
+	end
+	
+	-- se desconecta la carga del equipo
+	smu.source.output=smu.OFF
+	
+	-- se limpia el buffer
+	ExtBuffer.clear()
+	file.close(FileNumber)
+	print('Fin función de descarga')
+end
+
+function cccv_discharge(voltlimit, discurrent, curr_limit, SOC_0, cell_captotal, test_number) 
+	-- (voltaje descargado,corriente de descarga, número de identificación data)
+	
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+	
+	-- Se aseguran que la celda esté conectada al keithley
+	keithley_control()
+	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
+
+	smu.measure.func = smu.FUNC_DC_CURRENT 	-- Se mide corriente
+	smu.measure.sense = smu.SENSE_4WIRE 	-- Se cambia el sistema de medición a 4-wire para más precisión
+	smu.source.func = smu.FUNC_DC_VOLTAGE 	-- Se controla el voltaje
+	smu.source.offmode = smu.OFFMODE_HIGHZ 	-- Modo cuando la carga de desconecta para aislar el equipo
+	smu.source.level = voltlimit-0.05 		-- Fijar inferior a voltlimit para asegurar descarga constante
+	smu.source.range = 7					-- Asegura lectura de voltaje para valores menores a 7V
+	smu.measure.terminals = smu.TERMINALS_FRONT
+	smu.source.readback = smu.ON
+	
+	-- Definición de variables del proceso
+	deltatime = 0
+	capacity = 0
+	captotal = 0
+	aux = 1
+	iteration=1
+	iteration2=1
+	SOC = SOC_0
+	
+	smu.source.output=smu.ON -- Se inicia la conexión con la carga
+	display.changescreen(display.SCREEN_USER_SWIPE)
+	
+	while true do
+		-- Definición de variables por ciclo
+		smu.source.ilimit.level=-discurrent
+		curr=smu.measure.read(ExtBuffer)
+		volt=ExtBuffer.sourcevalues[iteration]
+		time1=ExtBuffer.relativetimestamps[iteration]
+		time2=ExtBuffer.timestamps[iteration2]
+		hours = (ExtBuffer.relativetimestamps[iteration2]/3600)
+		
+		if curr > -curr_limit then 
+			iteration2=(iteration2+1)
+			print('La corriente de la celda es menor a la corriente minima')
 			print('Último voltaje detectado= ',volt)
 			print('Última corriente detectada= ',curr)
 			break 
@@ -296,7 +383,7 @@ function vocbor_measure(voltlimit, SOC, test_number)
 	print('Fin función de medición voc_bor')
 end
 
-function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, charge_currlimit, test_number)
+function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, currlimit, test_number)
 	
 	reset()
 	
@@ -340,7 +427,7 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 		-- Limites de voltaje por seguridad
 		if current > 0 then-- Caso carga
 			if volt >= voltlimit then 
-				if curr <= charge_currlimit then
+				if curr <= currlimit then
 					iteration2=(iteration2+1)
 					print('La corriente de la celda es menor a la corriente mínima de carga')
 					print('Último voltaje detectado= ',volt)
@@ -349,9 +436,9 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, ch
 				end 
 			end
 		elseif current < 0 then -- Caso descarga
-			if volt <= voltlimit then 
+			if curr > -currlimit then 
 				iteration2=(iteration2+1)
-				print('El voltaje de la celda es menor al voltaje mínimo de descarga')
+				print('La corriente de la celda es menor a la corriente minima')
 				print('Último voltaje detectado= ',volt)
 				print('Última corriente detectada= ',curr)
 				break 
