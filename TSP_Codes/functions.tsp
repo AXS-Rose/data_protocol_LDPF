@@ -700,7 +700,7 @@ function keithley_control()
 	digio.line[3].state = 0 -- (SE DEJA DE ENVIAR LA SEÑAL PARA CONECTAR LA CELDA AL EIS) Enviamos un 1 para activar fuente y Normally Open del Rele	
 end
 
-function EIS_control() 
+function EIS_control(SOC_0,cell_captotal,test_number) 
 	-- Función para cambiar pins que dan el control de la prueba al EIS
 
 	-- Declaramos los pineas como input y output
@@ -716,6 +716,17 @@ function EIS_control()
 	digio.line[4].state = 0 -- Enviamos un 0 porque no queremos desactivar el Normally Open aún
 	delay(2)
 	digio.line[1].state = 0 -- (KEITHLEY DEJA DE OPERAR)Enviamos un 0 para darle la acción al EIS y no al keithley
+	
+	-- Definicion de archivo procedure
+	procedure = "EIS"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,test_number))
+	file.close(FileNumber)
+	
+	
 	print("Señal enviada, EIS tomo control")
 	while digio.line[2].state != digio.STATE_HIGH do
 		print(digio.line[2].state)
