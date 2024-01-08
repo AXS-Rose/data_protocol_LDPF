@@ -236,17 +236,37 @@ function vocbor_measure(voltlimit, test_number)
 	ExtBuffer.clear()
 end
 
-function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_number_2, test_number_3)
+function pulse_test(voltlimit,freq,pulsecurrent,discurrent,SOC_0,cell_captotal,test_number_1,test_number_2,test_number_3)
 
+	-- Creación buffer para guardar datos
+	reset() 
+	ExtBuffer = buffer.make(300000)
+	
+	-- Se aseguran que la celda esté conectada al keithley
+	keithley_control()
+	
+	-- Definicion de archivo procedure
+	procedure = "pulse_test"
+	
+	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
+	print("Function: ",procedure,"voltlimit: ", voltlimit,"discurrent: ", discurrent, "SOC_0: ", SOC_0, "cell_captotal: ",cell_captotal, "test_number", test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s\r\n",procedure,"voltlimit","discurrent","SOC_0","cell_captotal","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,voltlimit,discurrent,SOC_0,cell_captotal,test_number))
+	file.close(FileNumber)
+	
+	-- Definicion de archivo data
+	FileNumber=file.open("/usb1/TestData.csv",file.MODE_APPEND)
 	
 	smu.measure.func=smu.FUNC_DC_CURRENT
 	smu.measure.sense=smu.SENSE_4WIRE
 	smu.source.func=smu.FUNC_DC_VOLTAGE
 	smu.source.offmode=smu.OFFMODE_HIGHZ
 	smu.source.level=(voltlimit - 0.05) -- Fijar inferior a voltlimit
+	smu.source.range = 7
 	smu.measure.terminals=smu.TERMINALS_FRONT
 	smu.source.readback=smu.ON
 	
+	SOC = SOC_0
 	deltatime = 0
 	capacity = 0
 	captotal_pulso = 0
@@ -279,12 +299,16 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 		
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
+			print('El voltaje de la celda es menor al voltaje minimo')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal_pulso = captotal_pulso + capacity
 		end
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
@@ -329,12 +353,16 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 		
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
+			print('El voltaje de la celda es menor al voltaje minimo')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh 
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal_pulso = captotal_pulso + capacity
 		end
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
@@ -379,12 +407,16 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 		
 		if volt <= voltlimit then 
 			iteration2=(iteration2+1)
+			print('El voltaje de la celda es menor al voltaje minimo')
+			print('Último voltaje detectado= ',volt)
+			print('Última corriente detectada= ',curr)
 			break 
 		end
 		
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
-			capacity = smu.source.ilimit.level*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			capacity = curr*deltatime/3.6 -- en mAh (Asumo error en fuente de corriente)
+			SOC = SOC + (capacity/cell_captotal)*100
 			captotal_pulso = captotal_pulso + capacity
 		end
 		print("Iteration: ",iteration2,"voltage: ", volt,"current: ", curr, "time: ", time2, "deltatime: ",deltatime, "cap [mAh]", capacity, "cap total [mAh]", captotal_pulso, 'SOC', SOC, 'Test state', test_state)
@@ -401,6 +433,8 @@ function pulse_test(voltlimit, pulsecurrent, discurrent, test_number_1, test_num
 	smu.source.output=smu.OFF
 	
 	ExtBuffer.clear()
+	file.close(FileNumber)
+	print('Fin función de pulso')
 	
 	return captotal_pulso
 end
