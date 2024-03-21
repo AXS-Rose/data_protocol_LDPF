@@ -546,7 +546,7 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, cu
 	return SOC
 end
 
-function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test_number)
+function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,test_number)
 	
 	reset()
 	
@@ -554,9 +554,9 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test
 	procedure = "custom_profile"
 	
 	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
-	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"upper_voltlimit: ",upper_voltlimit,"lower_voltlimit: ",lower_voltlimit,"test_number: ",test_number) 
-	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","upper_voltlimit","lower_voltlimit","test_number"))
-	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test_number))
+	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"upper_voltlimit: ",upper_voltlimit,"lower_voltlimit: ",lower_voltlimit,"g_iteration: ",g_iteration, "test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","upper_voltlimit","lower_voltlimit","g_iteration","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,test_number))
 	file.close(FileNumber)
 	
 	-- Creación buffer para guardar datos
@@ -603,8 +603,8 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test
 	capacity = 0
 	captotal = 0
 	aux = 1
-	iteration=1
-	iteration2=1
+	iteration=g_iteration
+	iteration2=g_iteration
 	SOC = SOC_0
 	
 	--smu.source.range=7
@@ -676,6 +676,8 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,test
 	file.close(FileNumber)
 	
 	print('Fin función custom_load')
+	
+	return g_iteration
 end
 
 function keithley_control() 
