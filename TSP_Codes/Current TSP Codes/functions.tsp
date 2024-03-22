@@ -546,7 +546,7 @@ function cc_capacity_load(voltlimit, current, load_cap, SOC_0, cell_captotal, cu
 	return SOC
 end
 
-function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,test_number)
+function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,min_percentage,test_number)
 	
 	reset()
 	
@@ -554,9 +554,9 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 	procedure = "custom_profile"
 	
 	FileNumber=file.open("/usb1/TestProcedure.csv",file.MODE_APPEND)
-	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"upper_voltlimit: ",upper_voltlimit,"lower_voltlimit: ",lower_voltlimit,"g_iteration: ",g_iteration, "test_number: ",test_number) 
-	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","upper_voltlimit","lower_voltlimit","g_iteration","test_number"))
-	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,test_number))
+	print("Function: ",procedure,"SOC_0: ",SOC_0,"cell_captotal: ",cell_captotal,"upper_voltlimit: ",upper_voltlimit,"lower_voltlimit: ",lower_voltlimit,"g_iteration: ",g_iteration,"min_percentage: ",min_percentage,"test_number: ",test_number) 
+	file.write(FileNumber, string.format("%s,%s,%s,%s,%s,%s,%s,%s\r\n",procedure,"SOC_0","cell_captotal","upper_voltlimit","lower_voltlimit","g_iteration","min_percentage","test_number"))
+	file.write(FileNumber, string.format("%s,%g,%g,%g,%g,%g,%g,%g\r\n",procedure,SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_iteration,min_percentage,test_number))
 	file.close(FileNumber)
 	
 	-- Creación buffer para guardar datos
@@ -606,6 +606,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 	iteration=g_iteration
 	iteration2=g_iteration
 	SOC = SOC_0
+	min_cap = -(1-min_percentage)*cap_total
 	
 	--smu.source.range=7
 	smu.source.autorange = smu.ON
@@ -642,6 +643,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 		end
 	
 		
+		
 		-- capacidad acumulada
 		if aux >= 2 then
 			deltatime = time1 - ExtBuffer.relativetimestamps[iteration-1]
@@ -656,6 +658,14 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 		display.settext(display.TEXT2,string.format("current= %.2fA,time = %.2fHrs2", curr, hours))
 		iteration=(iteration+1)
 		
+		-- detección de limite de voltaje inferior
+		if captotal < min_cap then 
+			iteration2=(iteration2+1)
+			print('La celda se ha descargado a la capacidad minima configurada')
+			print('Última capacidad acumulada= ',captotal)
+			break 
+		end
+		
 		if iteration > contador then
 			print('El perfil ya no tiene más valores de corriente')
 			print('Último voltaje detectado= ',volt)
@@ -664,7 +674,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 		end
 		
 		iteration2=(iteration2+1)
-		delay(1)
+		delay(5)
 		aux=(aux+1)
 	end
 	
