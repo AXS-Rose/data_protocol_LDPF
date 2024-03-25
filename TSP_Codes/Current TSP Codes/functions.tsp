@@ -173,6 +173,8 @@ function cccv_discharge(voltlimit, discurrent, curr_limit, SOC_0, cell_captotal,
 	ExtBuffer.clear()
 	file.close(FileNumber)
 	print('Fin función de descarga')
+	
+	return SOC
 end
 
 function charge(voltlimit, charcurrent, curr_limit, SOC_0, cell_captotal, test_number)
@@ -255,7 +257,7 @@ function charge(voltlimit, charcurrent, curr_limit, SOC_0, cell_captotal, test_n
 	file.close(FileNumber)
 	print('Fin función de carga')
 	print('Valor de captotal_carga = ',captotal_carga)
-	return captotal_carga
+	return SOC
 end
 
 function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
@@ -338,6 +340,8 @@ function resting(voltlimit, contador_rest, SOC_0, cell_captotal, test_number)
 	ExtBuffer.clear()
 	file.close(FileNumber)
 	print('Fin función de descanso')
+	
+	return SOC
 end
 
 function vocbor_measure(voltlimit, SOC, test_number)
@@ -577,7 +581,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 		end
 		
 		numvar = var + 0
-		print(numvar)
+		--print(numvar)
 		
 		buffer.write.reading(csv_buffer, numvar)
 		contador = (contador+1)
@@ -606,7 +610,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 	iteration=g_iteration
 	iteration2=g_iteration
 	SOC = SOC_0
-	min_cap = -(1-min_percentage)*cap_total
+	min_cap = -(1-min_percentage)*cell_captotal
 	
 	--smu.source.range=7
 	smu.source.autorange = smu.ON
@@ -687,7 +691,7 @@ function custom_profile(SOC_0,cell_captotal,upper_voltlimit,lower_voltlimit,g_it
 	
 	print('Fin función custom_load')
 	
-	return g_iteration
+	return g_iteration, SOC
 end
 
 function keithley_control() 
